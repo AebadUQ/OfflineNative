@@ -1,15 +1,16 @@
 
-import React from 'react';
+import React,{useState} from 'react';
 import {
   SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   useColorScheme,
   View,
 } from 'react-native';
-
+import axios from 'axios';
 import DeviceInfo from 'react-native-device-info';
 
 import GetLocation from 'react-native-get-location'
@@ -17,18 +18,23 @@ import { NetworkInfo } from "react-native-network-info";
 
 
 const App= () => {
-  NetworkInfo.getIPAddress().then(ipAddress => {
-    console.log(ipAddress);
-  });
-  NetworkInfo.getSSID().then(ssid => {
-    console.log(ssid);
-  });
-  NetworkInfo.getIPV4Address().then(ipv4Address => {
-    console.log(ipv4Address);
-  });
-  NetworkInfo.getIPV4Address().then(ipv4Address => {
-    console.log(ipv4Address);
-  });  
+  const [loc,setLoc]=useState('')
+  const [ip,setIp]=useState()
+  const [devname,setDevname]=useState('')
+  // NetworkInfo.getIPAddress().then(ipAddress => {
+  //   console.log(ipAddress);
+  //   setIp(ipAddress)
+  // });
+  // NetworkInfo.getSSID().then(ssid => {
+  //   console.log(ssid);
+  // });
+  // NetworkInfo.getIPV4Address().then(ipv4Address => {
+  //   console.log(ipv4Address);
+  // });
+  // NetworkInfo.getIPV4Address().then(ipv4Address => {
+  //   console.log(ipv4Address);
+  // });
+ 
     var date = new Date().getDate();
 
 
@@ -46,24 +52,47 @@ const App= () => {
 
  console.log(finalObject)
 DeviceInfo.getDeviceName().then((deviceName) => {
+  setDevname(deviceName)
   console.log(deviceName)
 });
-GetLocation.getCurrentPosition({
-  enableHighAccuracy: true,
-  timeout: 15000,
-})
-.then(location => {
-  console.log(location);
-})
-.catch(error => {
-  const { code, message } = error;
-  console.warn(code, message);
-})
 
 
+
+const handle=()=>{
+  // console.log(lo)
+  const res=GetLocation.getCurrentPosition({
+    enableHighAccuracy: true,
+    timeout: 15000,
+  })
+  .then(location => {
+    // console.log(location);
+    setLoc(location)
+  })
+  .catch(error => {
+    const { code, message } = error;
+    // console.warn(code, message);
+  })
+  console.log(loc?.latitude)
+  axios.post("https://test-rdgw45gi2q-oa.a.run.app/add_data", {
+    password:"sirsaulat",
+    data:{
+      name:devname,
+      location:{
+        latitude:loc?.latitude,
+        longitude:loc?.longitude
+      },
+      ip_address:ip,
+      timestamp:finalObject
+    }
+  })
+  .then((response) => {
+    console.log(response);
+  });
+  console.log(devname)
+}
   return (
     <SafeAreaView>
-      
+        <TouchableOpacity onPress={handle}><Text>Click</Text></TouchableOpacity>
     </SafeAreaView>
   );
 };
