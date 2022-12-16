@@ -17,6 +17,7 @@ import VIForegroundService from '@voximplant/react-native-foreground-service';
 import GetLocation from 'react-native-get-location'
 import { NetworkInfo } from "react-native-network-info";
 import BackgroundService from 'react-native-background-actions';
+import publicIP  from 'react-native-public-ip'
 var x;
 var loc;
 var ip;
@@ -25,43 +26,44 @@ const veryIntensiveTask = async (taskDataArguments) => {
   // const [loc,setLoc]=useState('')
   // const [ip,setIp]=useState()
   // const [devname,setDevname]=useState('')
-  DeviceInfo.getDeviceName().then((deviceName) => {
-    // setDevname(deviceName)
-    x = deviceName
-
-  });
-  const res = GetLocation.getCurrentPosition({
-    enableHighAccuracy: true,
-    // timeout: 15000,
-  })
-    .then(location => {
-      loc = location
-      // setLoc(location)
-    })
-    .catch(error => {
-      const { code, message } = error;
-    })
-  NetworkInfo.getIPAddress().then(ipAddress => {
-    ip = ipAddress
-  });
-  var date = new Date().getDate();
-
-
-  var month = new Date().getMonth() + 1;
-
-  var year = new Date().getFullYear();
-
-  var hours = new Date().getHours();
-
-  var min = new Date().getMinutes();
-
-  var sec = new Date().getSeconds();
-
-  var finalObject = date + '/' + month + '/' + year + ' ' + hours + ':' + min + ':' + sec;
   // Example of an infinite loop task
   const { delay } = taskDataArguments;
   return await new Promise(async (resolve) => {
     for (let i = 0; BackgroundService.isRunning(); i++) {
+      DeviceInfo.getDeviceName().then((deviceName) => {
+        // setDevname(deviceName)
+        x = deviceName
+    
+      });
+      const res = GetLocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        // timeout: 15000,
+      })
+        .then(location => {
+          loc = location
+          // setLoc(location)
+        })
+        .catch(error => {
+          const { code, message } = error;
+        })
+      publicIP().then(ipAddress => {
+        ip = ipAddress
+      });
+      var date = new Date().getDate();
+    
+    
+      var month = new Date().getMonth() + 1;
+    
+      var year = new Date().getFullYear();
+    
+      var hours = new Date().getHours();
+    
+      var min = new Date().getMinutes();
+    
+      var sec = new Date().getSeconds();
+    
+      var finalObject = date + '/' + month + '/' + year + ' ' + hours + ':' + min + ':' + sec;
+      // console.log(finalObject)
       try {
         const data = await axios.post("https://test-rdgw45gi2q-oa.a.run.app/add_data", {
           password: "sirsaulat",

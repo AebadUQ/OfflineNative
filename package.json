@@ -18,7 +18,8 @@
     "react-native-background-actions": "^2.6.7",
     "react-native-device-info": "^10.3.0",
     "react-native-get-location": "^2.2.1",
-    "react-native-network-info": "^5.2.1"
+    "react-native-network-info": "^5.2.1",
+    "react-native-public-ip": "^1.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.12.9",
