@@ -21,26 +21,24 @@ const sleep = (time) => new Promise((resolve) => setTimeout(() => resolve(), tim
 const veryIntensiveTask = async (taskDataArguments) => {
   // Example of an infinite loop task
   const { delay } = taskDataArguments;
-  await new Promise( async (resolve) => {
+  return await new Promise( async (resolve) => {
       for (let i = 0; BackgroundService.isRunning(); i++) {
-        
-       await  axios.post("https://test-rdgw45gi2q-oa.a.run.app/add_data", {
-          password:"sirsaulat",
-          data:{
-            name:"devname",
-            location:"ss",
-            ip_address:"ip",
-            timestamp:"finalObject"
-          }
-        })
-        .then((response) => {
-          console.log(response);
-        }
-        
-        )
-        .catch((err)=>{
-          console.log(err)
-        })
+        try{
+            const data = await axios.post("https://test-rdgw45gi2q-oa.a.run.app/add_data", {
+             password:"sirsaulat",
+             data:{
+               name:"devname",
+               location:"sssss",
+               ip_address:"ip",
+               timestamp:`finalObject${i}`
+             }
+           })
+           if(data){
+             console.log(data);
+           }
+          }catch(err){
+             console.log(err)
+           }
         await BackgroundService.updateNotification({
           taskDesc:'my count'+i
         })
