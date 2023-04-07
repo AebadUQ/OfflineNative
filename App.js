@@ -8,99 +8,71 @@ import {
   Text,
   TouchableOpacity,
   useColorScheme,
-  View,
+  View,Alert,
+  TextInput,
+  Button
 } from 'react-native';
-import axios from 'axios';
+import axios  from 'axios';
 import DeviceInfo from 'react-native-device-info';
 import VIForegroundService from '@voximplant/react-native-foreground-service';
-
 import GetLocation from 'react-native-get-location'
 import { NetworkInfo } from "react-native-network-info";
 import BackgroundService from 'react-native-background-actions';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Linking } from 'react-native';
+import {NotificationTab,requestUserPermission} from './src/utils/pushnotification'
+import {host} from './config';
+import messaging from '@react-native-firebase/messaging';
+import MapView,{PROVIDER_GOOGLE,Marker} from 'react-native-maps';
+ 
 var x;
-var loc;
-var ip;
+var loc = {latitude: 24.9582895, longitude: 67.0691044}
+
 const sleep = (time) => new Promise((resolve) => setTimeout(() => resolve(), time));
 const veryIntensiveTask = async (taskDataArguments) => {
-  // const [loc,setLoc]=useState('')
-  // const [ip,setIp]=useState()
-  // const [devname,setDevname]=useState('')
-  DeviceInfo.getDeviceName().then((deviceName) => {
-    // setDevname(deviceName)
-    x = deviceName
-
-  });
-  const res = GetLocation.getCurrentPosition({
-    enableHighAccuracy: true,
-    // timeout: 15000,
-  })
-    .then(location => {
-      loc = location
-      // setLoc(location)
-    })
-    .catch(error => {
-      const { code, message } = error;
-    })
-  NetworkInfo.getIPAddress().then(ipAddress => {
-    ip = ipAddress
-  });
-  var date = new Date().getDate();
-
-
-  var month = new Date().getMonth() + 1;
-
-  var year = new Date().getFullYear();
-
-  var hours = new Date().getHours();
-
-  var min = new Date().getMinutes();
-
-  var sec = new Date().getSeconds();
-
-  var finalObject = date + '/' + month + '/' + year + ' ' + hours + ':' + min + ':' + sec;
-  // Example of an infinite loop task
   const { delay } = taskDataArguments;
   return await new Promise(async (resolve) => {
     for (let i = 0; BackgroundService.isRunning(); i++) {
+      // Linking.addEventListener('url', (handleOpenURL)=>{console.log('called')})
       try {
-        const data = await axios.post("https://test-rdgw45gi2q-oa.a.run.app/add_data", {
-          password: "sirsaulat",
-          data: {
-            name: x,
-            location: {
-              'latitude':loc?.latitude,
-              'longitude':loc?.longitude
-              
-            },
-
-            ip_address: ip,
-            timestamp: finalObject
-          }
+        const res = GetLocation.getCurrentPosition({
+          enableHighAccuracy: true,
         })
-        if (data) {
-          console.log(data);
-        }
+        .then(location => {
+          loc = location
+        })
+        .catch(error => {
+          const { code, message } = error;
+        })
+        let value = ({
+          latitude:loc?.latitude,
+          longitude:loc?.longitude,
+        })
+        console.log(value)
+        await AsyncStorage.setItem('latitude',loc.latitude.toString())
+        await AsyncStorage.setItem('longitude',loc.longitude.toString())
+        let token = await AsyncStorage.getItem('fcmtoken')
+        await axios.post(`https://d788-111-88-210-84.eu.ngrok.io/location`, {
+            [token]: {'latitude':loc?.latitude,'longitude':loc?.longitude}
+        })
       } catch (err) {
         console.log(err)
       }
-      await BackgroundService.updateNotification({
-        taskDesc: 'my count' + i
-      })
-
       await sleep(delay);
     }
   });
 };
+
 const options = {
   taskName: 'Background',
-  taskTitle: 'ETask',
-  taskDesc: 'ExampleTask description',
+  taskTitle: 'Location Tracking Start',
+  taskDesc: 'Stay Safe in Covid',
   taskIcon: {
     name: 'ic_launcher',
     type: 'mipmap',
   },
   color: '#ff00ff',
-  linkingURI: 'yourSchemeHere://chat/jane', // See Deep Linking for more info
+  linkingURI: 'yourSchemeHere://chat/jane', 
   parameters: {
     delay: 5000,
   },
@@ -108,96 +80,97 @@ const options = {
 
 
 const App = () => {
-  useEffect(() => {
-    createChannel()
-  }, [])
-  const createChannel = async () => {
-    const channelConfig = {
-      id: 'channelId',
-      name: 'Channel name',
-      description: 'Channel description',
-      enableVibration: false
-    };
-    await VIForegroundService.getInstance().createNotificationChannel(channelConfig);
-  }
-  const startForegroundService = async () => {
-    const notificationConfig = {
-      channelId: 'channelId',
-      id: 3456,
-      title: 'Title',
-      text: 'Some text',
-      icon: 'ic_icon',
-      button: 'Some text',
-    };
-    try {
-      await VIForegroundService.getInstance().startService(notificationConfig);
-    } catch (e) {
-      console.error(e);
-    }
-  }
-  const stopForegroundService = async () => {
-    await VIForegroundService.getInstance().stopService();
-
-  }
+  const [dest,setDest] = useState({latitude: 21, longitude: 67})
+  const [track,setTrack] = useState(true)
+  const [lat,setLet] = useState(null)
+  const [lng,setLng] = useState(null)
   const startBackgroundService = async () => {
-    await BackgroundService.start(veryIntensiveTask, options);
-    await BackgroundService.updateNotification({ taskDesc: 'New ExampleTask description' }); // Only Android, iOS will ignore this call
+    axios.get('https://d788-111-88-210-84.eu.ngrok.io/getDestination').then(async x=>{
+      console.log("x",x.data)
+    if(x.data?.longitude && x.data?.latitude)
+    {
+      setDest(x.data)
+      setTrack(!track)
+      await BackgroundService.start(veryIntensiveTask, options);
 
+    }else{
+      Alert.alert("Set New Destination Coordinate")
+    }
+    }).catch(x)
   }
   const stopBackgroundService = async () => {
+    console.log("called")
+    setTrack(!track)
     await BackgroundService.stop();
 
   }
+  useEffect(() => {
+    requestUserPermission()
+    NotificationTab(stopBackgroundService)
+    axios.get('https://d788-111-88-210-84.eu.ngrok.io/clear').then(x).catch(x)
+    axios.get('https://d788-111-88-210-84.eu.ngrok.io/getDestination').then(x=>{
+    if(x.data?.longitude && x.data?.latitude)
+    {
+      setDest(x.data)
 
+    }else{
+      Alert.alert("Set New Destination Coordinate")
+    }
+    }).catch(x)
+    
 
-  // NetworkInfo.getSSID().then(ssid => {
-  //   console.log(ssid);
-  // });
-  // NetworkInfo.getIPV4Address().then(ipv4Address => {
-  //   console.log(ipv4Address);
-  // });
-  // NetworkInfo.getIPV4Address().then(ipv4Address => {
-  //   console.log(ipv4Address);
-  // });
+  }, [])
+  const changeLocoation = ()=>{
+    console.log(lat,lng)
+    if(Number(lat) && Number(lng)){
+      let data = {latitude: lat, longitude: lng}
+      axios.post('https://d788-111-88-210-84.eu.ngrok.io/changeDestination',data).then(x=>{Alert.alert("Destination Successfully Changed")}).catch(x)
+    }
+    else{
+      Alert.alert("Invalid Format!")
+    }
+  }
 
-
-
-  //  console.log(finalObject)
-
-
-
-  // const handle=()=>{
-  //   // console.log(lo)
-
-  //   console.log(loc?.latitude)
-  // axios.post("https://test-rdgw45gi2q-oa.a.run.app/add_data", {
-  //   password:"sirsaulat",
-  //   data:{
-  //     name:devname,
-  //     location:{
-  //       latitude:loc?.latitude,
-  //       longitude:loc?.longitude
-  //     },
-  //     ip_address:ip,
-  //     timestamp:finalObject
-  //   }
-  // })
-  // .then((response) => {
-  //   console.log(response);
-  // });
-  //   console.log(devname)
-  // }
   return (
-    <SafeAreaView>
-      {/* <TouchableOpacity style={{borderWidth:1,margin:10,height:30}} onPress={()=>startForegroundService()}></TouchableOpacity>
-      <TouchableOpacity style={{borderWidth:1,margin:10}} onPress={()=>stopForegroundService()}><Text>2</Text></TouchableOpacity> */}
+    <>
+      <MapView
+      style={{ flex: 1 }}
+      provider={PROVIDER_GOOGLE}
+      showsUserLocation
+      initialRegion={{
+        latitude: loc.latitude,
+        longitude: loc.longitude,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421}}
+        ><Marker coordinate = {{latitude: dest.latitude ,longitude:dest.longitude}} pinColor = {"purple"} /></MapView>
+        <View style={{display : 'flex',flexDirection : 'row'}}>
+          <TextInput
+            placeholder="Latitude"
+            keyboardType="numeric"
+            style={{borderRadius: 10,height: 40,margin : 5,width : '35%', borderColor: 'gray', borderWidth: 1}}
+            onChangeText={(text)=>{
+              setLet(text.replace(/[- #*;,<>\{\}\[\]\\\/]/gi,''))
+            }}
+            value={lat} 
+            />
+          <TextInput
+            placeholder="Longitude"
+            keyboardType="numeric"
+            style={{borderRadius: 10,height: 40, margin : 5,width : '35%',borderColor: 'gray', borderWidth: 1}}
+            onChangeText={(text)=>{
+              setLng(text.replace(/[- #*;,<>\{\}\[\]\\\/]/gi,''))
+            }}
+            value={lng} 
+            />
+            <TouchableOpacity disabled={!track} style={track?{borderRadius: 20,height: 40, margin : 5,marginLeft: 20,justifyContent: 'center',alignItems: 'center',width : 40,borderColor: 'yellow', borderWidth: 1,backgroundColor : 'grey'}:
+            {borderRadius: 20,height: 40, margin : 5,marginLeft: 20,justifyContent: 'center',alignItems: 'center',width : 40,borderColor: 'white', borderWidth: 1,backgroundColor : 'grey',opacity: 0.5}} onPress={()=>{changeLocoation()}}><Text>+</Text></TouchableOpacity>
+        </View>
+        <SafeAreaView style={{justifyContent: 'center',width: '95%',margin: 'auto'}}>
+          <TouchableOpacity disabled={!track} style={track?{ padding: 5,borderRadius: 10,borderWidth: 1, margin: 5,marginLeft : '35%',alignItems: 'center',borderColor: 'yellow',width : '30%'}:{ padding: 5,borderRadius: 10,borderWidth: 1, margin: 5,alignItems: 'center',marginLeft : '35%',borderColor: 'grey',width : '30%',opacity : 0.5}} onPress={() => startBackgroundService()}><Text>Start Tracking</Text></TouchableOpacity>
+          <TouchableOpacity disabled={track} style={track?{ padding: 5,borderRadius: 10,borderWidth: 1, margin: 5,marginLeft : '35%',alignItems: 'center',borderColor: 'grey',width : '30%',opacity : 0.5}:{ padding: 5,borderRadius: 10,borderWidth: 1, margin: 5,alignItems: 'center',marginLeft : '35%',borderColor: 'yellow',width : '30%'}} onPress={() => stopBackgroundService()}><Text>Stop Tracking</Text></TouchableOpacity>
+        </SafeAreaView>
+    </>
 
-      <TouchableOpacity style={{ borderWidth: 1, margin: 10 }} onPress={() => startBackgroundService()}><Text>3</Text></TouchableOpacity>
-
-      <TouchableOpacity style={{ borderWidth: 1, margin: 10 }} onPress={() => stopBackgroundService()}><Text>4</Text></TouchableOpacity>
-
-      {/* <TouchableOpacity onPress={handle}><Text>Click</Text></TouchableOpacity> */}
-    </SafeAreaView>
   );
 };
 

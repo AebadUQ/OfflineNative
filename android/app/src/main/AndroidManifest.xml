@@ -2,6 +2,7 @@
   package="com.frontend">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -24,10 +25,16 @@
         <intent-filter>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="yourSchemeHere" />
         </intent-filter>
       </activity>
       <service android:name="com.voximplant.foregroundservice.VIForegroundService"> </service>
           <service android:name="com.asterinet.react.bgactions.RNBackgroundActionsTask" />
-
+            <meta-data
+     android:name="com.google.android.geo.API_KEY"
+     android:value="AIzaSyATtrsiAlzHem4K7vJt_Y3yGv7sUY8fl8k"/>
     </application>
 </manifest>
