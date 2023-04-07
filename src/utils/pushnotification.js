@@ -17,7 +17,7 @@ async function token(){
      }
 }
 
-export const NotificationTab= ()=>{
+export const NotificationTab= (p)=>{
   messaging().onNotificationOpenedApp(remoteMessage => {
     console.log(
       'Notification caused app to open from background state:',
@@ -35,7 +35,7 @@ export const NotificationTab= ()=>{
         }
       });
       messaging().onMessage(async remoteMessage=>{
-        Alert.alert('Hey!', JSON.stringify(remoteMessage.notification.body));
+        p(remoteMessage.notification.body)
       })
     }
     export async function requestUserPermission() {

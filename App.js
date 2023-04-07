@@ -52,7 +52,7 @@ const veryIntensiveTask = async (taskDataArguments) => {
         await AsyncStorage.setItem('latitude',loc.latitude.toString())
         await AsyncStorage.setItem('longitude',loc.longitude.toString())
         let token = await AsyncStorage.getItem('fcmtoken')
-        await axios.post(`https://d788-111-88-210-84.eu.ngrok.io/location`, {
+        await axios.post(`https://tracking-sigma.vercel.app/location`, {
             [token]: {'latitude':loc?.latitude,'longitude':loc?.longitude}
         })
       } catch (err) {
@@ -85,12 +85,12 @@ const App = () => {
   const [lat,setLet] = useState(null)
   const [lng,setLng] = useState(null)
   const startBackgroundService = async () => {
-    axios.get('https://d788-111-88-210-84.eu.ngrok.io/getDestination').then(async x=>{
+    axios.get('https://tracking-sigma.vercel.app/getDestination').then(async x=>{
       console.log("x",x.data)
     if(x.data?.longitude && x.data?.latitude)
     {
       setDest(x.data)
-      setTrack(!track)
+      setTrack(false)
       await BackgroundService.start(veryIntensiveTask, options);
 
     }else{
@@ -98,17 +98,19 @@ const App = () => {
     }
     }).catch(x)
   }
-  const stopBackgroundService = async () => {
-    console.log("called")
-    setTrack(!track)
+  const stopBackgroundService = async (pop=null) => {
+    if(pop){
+      Alert.alert('Hey!', pop);
+    }
+    setTrack(true)
     await BackgroundService.stop();
 
   }
   useEffect(() => {
     requestUserPermission()
     NotificationTab(stopBackgroundService)
-    axios.get('https://d788-111-88-210-84.eu.ngrok.io/clear').then(x).catch(x)
-    axios.get('https://d788-111-88-210-84.eu.ngrok.io/getDestination').then(x=>{
+    axios.get('https://tracking-sigma.vercel.app/clear').then(x).catch(x)
+    axios.get('https://tracking-sigma.vercel.app/getDestination').then(x=>{
     if(x.data?.longitude && x.data?.latitude)
     {
       setDest(x.data)
@@ -124,7 +126,7 @@ const App = () => {
     console.log(lat,lng)
     if(Number(lat) && Number(lng)){
       let data = {latitude: lat, longitude: lng}
-      axios.post('https://d788-111-88-210-84.eu.ngrok.io/changeDestination',data).then(x=>{Alert.alert("Destination Successfully Changed")}).catch(x)
+      axios.post('https://tracking-sigma.vercel.app/changeDestination',data).then(x=>{Alert.alert("Destination Successfully Changed")}).catch(x)
     }
     else{
       Alert.alert("Invalid Format!")
